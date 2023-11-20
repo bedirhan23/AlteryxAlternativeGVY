@@ -53,6 +53,7 @@ class ConverterFrame(ttk.Frame):
         options = {'padx': 5, 'pady': 5}
 
         self.output_folder_path = None
+        self.output_txt_file = None
 
         self.input_button = ttk.Button(self, text='Input Folder', command=self.call_folder)
         self.input_button.grid(column=0, row=0, **options)
@@ -60,8 +61,8 @@ class ConverterFrame(ttk.Frame):
         self.output_button = ttk.Button(self, text='Output Folder', command=self.call_output_folder)
         self.output_button.grid(column=1, row=0, **options)
 
-        self.output_txt = ttk.Button(self, text= 'Output Txt', command= self.call_output_txt)
-        self.output_txt.grid(column= 0, row= 1, **options)
+        self.output_txt_button = ttk.Button(self, text= 'Output Txt', command= self.call_output_txt)
+        self.output_txt_button.grid(column= 0, row= 1, **options)
 
     def call_folder(self):
         folder_path = fd.askdirectory()
@@ -71,7 +72,21 @@ class ConverterFrame(ttk.Frame):
         self.output_folder_path = fd.askdirectory()
         self.process_folder(self.output_folder_path)
 
+    def call_output_txt(self):
+        output_txt_file = fd.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+
+        if not output_txt_file:
+            # Eğer kullanıcı dosya seçimini iptal ederse, işlemi sonlandır
+            return
+
+        self.output_txt_file = output_txt_file
+        self.process_folder(self.output_txt_file)
+
     def process_folder(self, folder_path):
+
+        """if self.output_txt is None:
+            print("Lütfen önce Output Txt dosyası seçin.")
+            return"""
         if self.output_folder_path is None:
             print("Lütfen önce Output Folder'ı seçin.")
             return
@@ -82,7 +97,7 @@ class ConverterFrame(ttk.Frame):
             pdf_extractor.extract_text_from_pdf(pdf_file)
             pdf_extractor.get_extracted_text()
 
-            if  pdf_extractor.borclu is None or pdf_extractor.feragat is None or len(pdf_extractor.alacak) < 2:
+            if pdf_extractor.borclu is None or pdf_extractor.feragat is None or len(pdf_extractor.alacak) < 2:
                 destination_path = os.path.join(self.output_folder_path, os.path.basename(pdf_file))
                 print(f"Moving file {pdf_file} to {self.output_folder_path}")
                 shutil.move(pdf_file, destination_path)
@@ -99,6 +114,22 @@ class ConverterFrame(ttk.Frame):
             print("URL:", pdf_extractor.url)
             print("********************************")
             print("\n")
+
+            if self.output_txt_file is None or not hasattr(self.output_txt_file, 'write'):
+                # Dosya nesnesi yoksa veya yazma özelliği yoksa, dosyayı açın
+                self.output_txt_file = open(self.output_txt_file, 'w', encoding='utf-8')
+
+            #output_txt = open(self.output_txt, 'w')
+            self.output_txt_file.write(f"File: {pdf_file} \n")
+            self.output_txt_file.write(f"{pdf_extractor.icra_dairesi} İcra Dairesi \n")
+            self.output_txt_file.write(f"{pdf_extractor.icra_dosyasi} \n")
+            self.output_txt_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
+            #self.output_txt_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
+            self.output_txt_file.write(f"TCKN: {pdf_extractor.tckn} \n")
+            self.output_txt_file.write(f"Asıl Alacak: {pdf_extractor.alacak} \n")
+            self.output_txt_file.write(f"Feragat: {pdf_extractor.feragat} \n")
+            self.output_txt_file.write(f"URL: {pdf_extractor.url} \n")
+
 
 
 root = tk.Tk()
