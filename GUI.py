@@ -16,12 +16,12 @@ class PdfExtractor:
     def extract_text_from_pdf(self, pdf_file):
         try:
             reader = PdfReader(pdf_file)
-            self.extracted_text = ""
+            extracted_text = ""  #self ekle yarın
 
             for page in reader.pages:
-                self.extracted_text += page.extract_text()
+                extracted_text += page.extract_text()
 
-            return  self.extracted_text
+            return  extracted_text
             #return extracted_text
         except Exception as e:
             print(f"Hata oluştu: {e}")
@@ -54,24 +54,35 @@ class ConverterFrame(ttk.Frame):
 
         options = {'padx': 5, 'pady': 5}
 
+        self.output_folder_path = None
         """self.input_label = ttk.Label(self, text= 'Klasor yolunu giriniz')
         self.input_label.grid(column=0, row=0, sticky= tk.W, **options)"""
 
-        self.input_button = ttk.Button(self, text='Input Folder', command= self.call_folder())
+        self.input_button = ttk.Button(self, text='Input Folder', command= self.call_folder)
         self.input_button.grid(column = 0, row=0, **options)
 
-        self.output_button= ttk.Button(self, text='Output Folder', command= self.call_output_folder())
+        self.output_button= ttk.Button(self, text='Output Folder', command= self.call_output_folder)
+        self.output_button.grid(column =1, row=0, **options)
+
+        self.process_button = ttk.Button(self, text='Process', command= self.process_folder(self.output_folder_path))
+        self.process_button.grid(column=1, row=1, **options)
 
     def call_folder(self):
         folder_path= fd.askdirectory()
         self.process_folder(folder_path)
+        print(f'This is input folder {folder_path}')
 
     def call_output_folder(self):
         self.output_folder_path= fd.askdirectory()
         self.process_folder(self.output_folder_path)
+        print(f'This is output folder {self.output_folder_path}')
 
 
     def process_folder(self, folder_path):
+        if self.output_folder_path is None:
+            print("Lütfen önce Output Folder'ı seçin.")
+            return
+
         pdf_extractor = PdfExtractor(folder_path)
 
         for pdf_file in glob.glob(os.path.join(folder_path, "*.pdf")):
@@ -80,9 +91,11 @@ class ConverterFrame(ttk.Frame):
             pdf_extractor.get_extracted_text()
 
             if pdf_extractor.feragat is None or len(pdf_extractor.alacak) < 2:
-                print(f"Moving file {pdf_file}")
+                destination_path = os.path.join(self.output_folder_path, os.path.basename(pdf_file))
+                print(f"Moving file {pdf_file} to {destination_path}")
                 shutil.move(pdf_file, os.path.join(self.output_folder_path, os.path.basename(pdf_file)))
                 continue
+
             print(f"File: {pdf_file}")
             print("İcra Dairesi:", pdf_extractor.icra_dairesi)
             print("İcra Dosyası:", pdf_extractor.icra_dosyasi)
