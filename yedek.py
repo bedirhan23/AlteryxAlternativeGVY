@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 from PyPDF2 import PdfReader
+from openpyxl import load_workbook
 
 class PdfExtractor:
     def __init__(self, file_path):
@@ -53,7 +54,7 @@ class ConverterFrame(ttk.Frame):
         options = {'padx': 5, 'pady': 5}
 
         self.output_folder_path = None
-        self.output_txt_file = None
+        self.output_xlsx_file = None
 
         self.input_button = ttk.Button(self, text='Input Folder', command=self.call_folder)
         self.input_button.grid(column=0, row=0, **options)
@@ -61,7 +62,7 @@ class ConverterFrame(ttk.Frame):
         self.output_button = ttk.Button(self, text='Output Folder', command=self.call_output_folder)
         self.output_button.grid(column=1, row=0, **options)
 
-        self.output_txt_button = ttk.Button(self, text= 'Output Txt', command= self.call_output_txt)
+        self.output_txt_button = ttk.Button(self, text= 'Output Excel', command= self.call_output_xlsx)
         self.output_txt_button.grid(column= 0, row= 1, **options)
 
     def call_folder(self):
@@ -72,26 +73,30 @@ class ConverterFrame(ttk.Frame):
         self.output_folder_path = fd.askdirectory()
         self.process_folder(self.output_folder_path)
 
-    def call_output_txt(self):
-        output_txt_file = fd.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-
-        if not output_txt_file:
-            # Eğer kullanıcı dosya seçimini iptal ederse, işlemi sonlandır
-            return
-
-        self.output_txt_file = output_txt_file
-        self.process_folder(self.output_txt_file)
+    def call_output_xlsx(self):
+        output_xlsx_file = fd.askopenfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+        #
+        if output_xlsx_file:
+            self.output_xlsx_file = output_xlsx_file
+            self.process_folder(self.output_xlsx_file)
 
     def process_folder(self, folder_path):
 
-        """if self.output_txt is None:
+        if self.output_xlsx_file is None:
             print("Lütfen önce Output Txt dosyası seçin.")
-            return"""
+            return
         if self.output_folder_path is None:
             print("Lütfen önce Output Folder'ı seçin.")
             return
 
         pdf_extractor = PdfExtractor(folder_path)
+
+        workbook = load_workbook(filename=self.output_xlsx_file)
+        self.sheet = workbook.active
+
+        # if self.output_xlsx_file is None or not hasattr(self.output_xlsx_file, "write"):
+        #     # Dosya nesnesi yoksa veya yazma özelliği yoksa, dosyayı açın
+        #     self.output_xlsx_file = open(self.output_xlsx_file, 'r+', encoding='utf-8')
 
         for pdf_file in glob.glob(os.path.join(folder_path, "*.pdf")):
             pdf_extractor.extract_text_from_pdf(pdf_file)
@@ -114,21 +119,30 @@ class ConverterFrame(ttk.Frame):
             print("URL:", pdf_extractor.url)
             print("********************************")
             print("\n")
+            #if pdf_extractor.tckn ==
+            for row in self.sheet.iter_rows(min_row=2, max_row= self.sheet.max_row, min_col=5, max_col=5):
+                for cell in row:
+                    if cell.value == pdf_extractor.tckn:
+                        if cell.row and self.sheet.cell(row= cell.row, column= 6).value is None and self.sheet.cell(row= cell.row, column= 8).value is None:
+                            self.sheet.cell(row=cell.row, column=6).value = pdf_extractor.alacak
+                            self.sheet.cell(row=cell.row, column=8).value = pdf_extractor.feragat
+                            # self.sheet.cell(row=cell.row, column=9).value = pdf_extractor.url
+                            # self.sheet.cell(row=cell.row, column=2).value = pdf_extractor.icra_dairesi
+                            # self.sheet.cell(row=cell.row, column=3).value = pdf_extractor.icra_dosyasi
 
-            if self.output_txt_file is None or not hasattr(self.output_txt_file, 'write'):
-                # Dosya nesnesi yoksa veya yazma özelliği yoksa, dosyayı açın
-                self.output_txt_file = open(self.output_txt_file, 'w', encoding='utf-8')
 
+
+            workbook.save(self.output_xlsx_file)
             #output_txt = open(self.output_txt, 'w')
-            self.output_txt_file.write(f"File: {pdf_file} \n")
-            self.output_txt_file.write(f"{pdf_extractor.icra_dairesi} İcra Dairesi \n")
-            self.output_txt_file.write(f"{pdf_extractor.icra_dosyasi} \n")
-            self.output_txt_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
-            #self.output_txt_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
-            self.output_txt_file.write(f"TCKN: {pdf_extractor.tckn} \n")
-            self.output_txt_file.write(f"Asıl Alacak: {pdf_extractor.alacak} \n")
-            self.output_txt_file.write(f"Feragat: {pdf_extractor.feragat} \n")
-            self.output_txt_file.write(f"URL: {pdf_extractor.url} \n")
+            # self.output_xlsx_file.write(f"File: {pdf_file} \n")
+            # self.output_xlsx_file.write(f"{pdf_extractor.icra_dairesi} İcra Dairesi \n")
+            # self.output_xlsx_file.write(f"{pdf_extractor.icra_dosyasi} \n")
+            # self.output_xlsx_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
+            # #self.output_txt_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
+            # self.output_xlsx_file.write(f"TCKN: {pdf_extractor.tckn} \n")
+            # self.output_xlsx_file.write(f"Asıl Alacak: {pdf_extractor.alacak} \n")
+            # self.output_xlsx_file.write(f"Feragat: {pdf_extractor.feragat} \n")
+            # self.output_xlsx_file.write(f"URL: {pdf_extractor.url} \n")
 
 
 
