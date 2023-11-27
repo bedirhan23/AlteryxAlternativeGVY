@@ -7,6 +7,8 @@ from tkinter import ttk
 from tkinter import filedialog as fd
 from PyPDF2 import PdfReader
 from openpyxl import load_workbook
+from tkinter import messagebox
+
 
 class PdfExtractor:
     def __init__(self, file_path):
@@ -67,11 +69,15 @@ class ConverterFrame(ttk.Frame):
 
     def call_folder(self):
         folder_path = fd.askdirectory()
-        self.process_folder(folder_path)
+        if folder_path:
+            self.process_folder(folder_path)
+            messagebox.showinfo('Başarılı', 'Klasör başarıyla seçildi!')
 
     def call_output_folder(self):
         self.output_folder_path = fd.askdirectory()
-        self.process_folder(self.output_folder_path)
+        if self.output_folder_path:
+            self.process_folder(self.output_folder_path)
+            messagebox.showinfo('Başarılı', "Uyumsuz PDF'lerin klaösürü başarıyla seçildi")
 
     def call_output_xlsx(self):
         output_xlsx_file = fd.askopenfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
@@ -79,6 +85,7 @@ class ConverterFrame(ttk.Frame):
         if output_xlsx_file:
             self.output_xlsx_file = output_xlsx_file
             self.process_folder(self.output_xlsx_file)
+            messagebox.showinfo('Başarılı', "Verilerin aktarılacağı Excel başarıyla seçildi")
 
     def process_folder(self, folder_path):
 
