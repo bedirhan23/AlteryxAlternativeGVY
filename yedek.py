@@ -120,31 +120,17 @@ class ConverterFrame(ttk.Frame):
             print("********************************")
             print("\n")
             #if pdf_extractor.tckn ==
-            for row in self.sheet.iter_rows(min_row=2, max_row= self.sheet.max_row, min_col=5, max_col=5):
+            for row in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row, min_col=5, max_col=5):
                 for cell in row:
-                    if cell.value == pdf_extractor.tckn:
-                        if cell.row and self.sheet.cell(row= cell.row, column= 6).value is None and self.sheet.cell(row= cell.row, column= 8).value is None:
+                    if cell.value == pdf_extractor.tckn and self.sheet.cell(row=cell.row,
+                                                                            column=3).value == pdf_extractor.icra_dosyasi:
+                        if cell.row and self.sheet.cell(row=cell.row, column=6).value is None and self.sheet.cell(
+                                row=cell.row, column=8).value is None:
                             self.sheet.cell(row=cell.row, column=6).value = pdf_extractor.alacak
                             self.sheet.cell(row=cell.row, column=8).value = pdf_extractor.feragat
-                            # self.sheet.cell(row=cell.row, column=9).value = pdf_extractor.url
-                            # self.sheet.cell(row=cell.row, column=2).value = pdf_extractor.icra_dairesi
-                            # self.sheet.cell(row=cell.row, column=3).value = pdf_extractor.icra_dosyasi
-
-
+                            self.sheet.cell(row=cell.row, column=9).value = pdf_extractor.url
 
             workbook.save(self.output_xlsx_file)
-            #output_txt = open(self.output_txt, 'w')
-            # self.output_xlsx_file.write(f"File: {pdf_file} \n")
-            # self.output_xlsx_file.write(f"{pdf_extractor.icra_dairesi} İcra Dairesi \n")
-            # self.output_xlsx_file.write(f"{pdf_extractor.icra_dosyasi} \n")
-            # self.output_xlsx_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
-            # #self.output_txt_file.write(f"Borçlu: {pdf_extractor.borclu} \n")
-            # self.output_xlsx_file.write(f"TCKN: {pdf_extractor.tckn} \n")
-            # self.output_xlsx_file.write(f"Asıl Alacak: {pdf_extractor.alacak} \n")
-            # self.output_xlsx_file.write(f"Feragat: {pdf_extractor.feragat} \n")
-            # self.output_xlsx_file.write(f"URL: {pdf_extractor.url} \n")
-
-
 
 root = tk.Tk()
 root.geometry('200x200')
