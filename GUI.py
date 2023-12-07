@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 
+
 from PyPDF2 import PdfReader
 
 class PdfExtractor:

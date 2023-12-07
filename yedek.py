@@ -49,7 +49,7 @@ class PdfExtractor:
         url_match = re.search(r'https://evrakdogrula\.uyap\.gov\.tr/[a-zA-Z0-9]+', extracted_text)
         self.url = url_match.group() if url_match else None
 
-class ConverterFrame(ttk.Frame):
+class  ConverterFrame(ttk.Frame):
     def __init__(self, container):
         super().__init__(container)
 
@@ -64,8 +64,8 @@ class ConverterFrame(ttk.Frame):
         self.output_button = ttk.Button(self, text='Output Folder', command=self.call_output_folder)
         self.output_button.grid(column=1, row=0, **options)
 
-        self.output_txt_button = ttk.Button(self, text= 'Output Excel', command= self.call_output_xlsx)
-        self.output_txt_button.grid(column= 0, row= 1, **options)
+        self.output_txt_button = ttk.Button(self, text='Output Excel', command=self.call_output_xlsx)
+        self.output_txt_button.grid(column=0, row=1, **options)
 
     def call_folder(self):
         folder_path = fd.askdirectory()
@@ -101,9 +101,6 @@ class ConverterFrame(ttk.Frame):
         workbook = load_workbook(filename=self.output_xlsx_file)
         self.sheet = workbook.active
 
-        # if self.output_xlsx_file is None or not hasattr(self.output_xlsx_file, "write"):
-        #     # Dosya nesnesi yoksa veya yazma özelliği yoksa, dosyayı açın
-        #     self.output_xlsx_file = open(self.output_xlsx_file, 'r+', encoding='utf-8')
 
         for pdf_file in glob.glob(os.path.join(folder_path, "*.pdf")):
             pdf_extractor.extract_text_from_pdf(pdf_file)
@@ -118,19 +115,21 @@ class ConverterFrame(ttk.Frame):
             print(f"File: {pdf_file}")
             print("İcra Dairesi:", pdf_extractor.icra_dairesi)
             print("İcra Dosyası:", pdf_extractor.icra_dosyasi)
-            #print("Birlikte", pdf_extractor.birlikte)
             print("Borçlu:", pdf_extractor.borclu)
             print("TCKN:", pdf_extractor.tckn)
+            print(type(pdf_extractor.tckn))
             print("Asıl Alacak:", pdf_extractor.alacak)
             print("Feragat Edilen Tutar:", pdf_extractor.feragat)
             print("URL:", pdf_extractor.url)
             print("********************************")
             print("\n")
-            #if pdf_extractor.tckn ==
+
+
             for row in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row, min_col=5, max_col=5):
                 for cell in row:
                     if cell.value == pdf_extractor.tckn and self.sheet.cell(row=cell.row,
                                                                             column=3).value == pdf_extractor.icra_dosyasi:
+                        print(type(cell.value))
                         if cell.row and self.sheet.cell(row=cell.row, column=6).value is None and self.sheet.cell(
                                 row=cell.row, column=8).value is None:
                             self.sheet.cell(row=cell.row, column=6).value = pdf_extractor.alacak
