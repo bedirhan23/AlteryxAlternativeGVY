@@ -10,6 +10,7 @@ from openpyxl import load_workbook
 from tkinter import messagebox
 import locale
 from unidecode import unidecode
+from collections import Counter
 
 locale.setlocale(locale.LC_ALL, 'tr_TR.UTF-8')
 
@@ -119,6 +120,7 @@ class ConverterFrame(ttk.Frame):
         self.outlier_counter = 0
         self.filled_row = 0
         self.tckn_rows = []
+        read_tckns = []
         self.tckn_row_mapping = {}
 
         for pdf_file in glob.glob(os.path.join(folder_path, "*.pdf")):
@@ -184,7 +186,6 @@ class ConverterFrame(ttk.Frame):
                             # print(f"ICRA Dairesi: {excel_icra_dairesi}")
                             # print(f"TCKNN DECODE: {excel_tckn_value}")
                             # print("++++++++++++++++++++++++")
-                            ...
 
                             # Identify the column index where TCKN is expected in the Excel sheet
                             tckn_column_index = 2  # Adjust this index based on the actual column index for TCKN
@@ -197,6 +198,7 @@ class ConverterFrame(ttk.Frame):
                                 excel_tckn_value = unidecode(str(excel_tckn_value_cell.value))
                                 int_excel_tckn_value = int(excel_tckn_value)
                                 self.tckn_int = int(pdf_extractor.tckn)
+                                read_tckns.append(self.tckn_int)
                                 #print("Converted to int:", self.tckn_int)
 
                                 # print(f" 198 Excel TCKN VALUE {excel_tckn_value}, type {type(excel_tckn_value)}")
@@ -213,31 +215,57 @@ class ConverterFrame(ttk.Frame):
                                     # print("PDF TCKN VALUE:", pdf_extractor.tckn)
                             else:
                                 print("TCKN column is empty in the current row.")
-                        except ValueError as ve:
-                            print(f"Error converting to int: {ve}")
+                        except ValueError as int_excel_tckn_value:
+                            print(f"Error converting to int: {int_excel_tckn_value}")
 
             print("TCKN ROWS: ", self.tckn_rows)
+            #print("READ TCKNS: ", read_tckns)
+
+            tckn_counter = Counter(self.tckn_rows)
+
+            # Check if any TCKN is repeated more than once
+            repeated_tckns = [tckn for tckn, count in tckn_counter.items() if count > 1]
+
+            repetitive_tckns = set(self.tckn_rows)
+            read_tckns_set = set(read_tckns)
+            new_tckns = read_tckns_set - repetitive_tckns
+            #print("Inner loop finished.")
             if not found_match:
-                if self.tckn_rows:
-                    print("ZORLUUUUUUUUU")
-                    if len(self.tckn_rows) > 1:
-                        destination_path = os.path.join(self.output_folder_path, os.path.basename(pdf_file))
-                        print(f"Moving file {pdf_file} to {self.output_folder_path}")
-                        shutil.move(pdf_file, destination_path)
+                if repeated_tckns:
+                    destination_path = os.path.join(self.output_folder_path, "Undesired_Files")
+                    os.makedirs(destination_path, exist_ok=True)
+
+                    # Check if the TCKN in the current PDF is repeated
+                    current_pdf_tckn = int(pdf_extractor.tckn)
+                    if current_pdf_tckn in repeated_tckns:
+                        print(f"Moving file {pdf_file} to {destination_path}")
+                        shutil.move(pdf_file, os.path.join(destination_path, os.path.basename(pdf_file)))
                         self.outlier_counter += 1
                         continue
-
-                    for tckn in self.tckn_rows:
+                    #print("outer loop finished.")
+                    for tckn in new_tckns:
                         try:
-                            row_number = self.tckn_row_mapping.get(tckn)
-                            if row_number is not None:
-                                self.sheet.cell(row=row_number, column=14).value = pdf_extractor.alacak
-                                self.sheet.cell(row=row_number, column=13).value = pdf_extractor.feragat
-                                self.sheet.cell(row=row_number, column=17).value = pdf_extractor.url
-                                print("tckn'ye göre doldurdum", )
-                                self.filled_row += 1
-                        except IndexError:
-                            print(f"IndexError: TCKN column might be missing.")
+                            for current_row in self.sheet.iter_rows(min_row=1, max_row=self.sheet.max_row):
+                                excel_tckn_value_cell = current_row[tckn_column_index]
+
+                                if excel_tckn_value_cell is not None and excel_tckn_value_cell.value is not None:
+                                    excel_tckn_value = unidecode(str(excel_tckn_value_cell.value))
+                                    int_excel_tckn_value = int(excel_tckn_value)
+                                    tckn_int = int(tckn)
+
+                                    if int_excel_tckn_value == tckn_int:
+                                        print("Match found. Adding to TCKN rows.")
+                                        #self.tckn_rows.append(tckn_int)
+
+                                        # Burada satırı doğrudan güncelle
+                                        self.sheet.cell(row=current_row[0].row, column=14).value = pdf_extractor.alacak
+                                        self.sheet.cell(row=current_row[0].row, column=13).value = pdf_extractor.feragat
+                                        self.sheet.cell(row=current_row[0].row, column=17).value = pdf_extractor.url
+                                        print("New TCKN found and updated:", tckn_int)
+                                        self.filled_row += 1
+                                        break  # Satırı bulduktan sonra döngüden çık
+                        except ValueError as int_excel_tckn_value:
+                            print(f"Error converting to int: {int_excel_tckn_value}")
 
         workbook.save(self.output_xlsx_file)
 
