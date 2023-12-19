@@ -123,6 +123,11 @@ class ConverterFrame(ttk.Frame):
         self.tckn_rows = []
         read_tckns = []
         self.tckn_row_mapping = []
+        filled = []
+
+        excel_tckn = []
+        for a in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row):
+            excel_tckn.append(unidecode(str(a[2].value)))
 
         # Initialize tckn_column_index outside the loop
         tckn_column_index = 2  # Adjust this index based on the actual column index for TCKN
@@ -180,6 +185,7 @@ class ConverterFrame(ttk.Frame):
                                 self.sheet.cell(row=current_row[0].row, column=13).value = pdf_extractor.feragat
                                 self.sheet.cell(row=current_row[0].row, column=17).value = pdf_extractor.url
                                 self.tckn_rows.append(pdf_extractor.tckn)
+                                filled.append(self.tckn_cell.row)
                                 print(f"icra no ve daire eşit excel'e doldurdum icra dosyası: {excel_icra_dosyasi} and icra dairesi: {excel_icra_dairesi} ", excel_tckn_value_cell)
                                 self.filled_row += 1
                                 found_match = True
@@ -189,55 +195,37 @@ class ConverterFrame(ttk.Frame):
                             continue
 
             # Step 2: Check if the TCKN is unique in the Excel file
-            unique_tckns = set([str(row[2].value) for row in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row)])
+            #unique_tckns = set([str(row[2].value) for row in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row)])
+
             current_pdf_tckn = str(pdf_extractor.tckn)
 
-            # Step 3: If the TCKN is already filled in the Excel, skip to the next PDF
-            # if current_pdf_tckn in unique_tckns:
-            #     continue
-
-            #print("UNIQUE TCKNS: ",unique_tckns)
-            # Step 4: If the TCKN is unique, check if it's in the list of TCKNs filled in Step 1
-            if current_pdf_tckn in self.tckn_rows:
-                print("202")
-                # self.sheet.cell(row=current_pdf_tckn[0].row, column=14).value = pdf_extractor.alacak
-                # self.sheet.cell(row=current_pdf_tckn[0].row, column=13).value = pdf_extractor.feragat
-                # self.sheet.cell(row=current_pdf_tckn[0].row, column=17).value = pdf_extractor.url
-                # self.filled_row += 1
-                # print(f"PDF TCKN found and updated in Excel: {current_pdf_tckn}")
+            if found_match:
                 continue
-            print("Kontrolden önce ")
-            #print(unique_tckns)
-            # Step 5: If the TCKN is in the list of unique TCKNs, fill the corresponding row
-            if current_pdf_tckn in unique_tckns:
-                for current_row in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row):
-                    tckn_column_index = 2
-                    excel_tckn_value2 = int(current_row[tckn_column_index].value)
-                    current_pdf_tckn_int = int(current_pdf_tckn)
-                    print(f" 216 Excel TCKN VALUE {excel_tckn_value2}, type {type(excel_tckn_value2)}")
-                    print(f" 217 CURRENT TCKN INT {current_pdf_tckn_int}, type {type(current_pdf_tckn_int)}")
 
-                    if excel_tckn_value2 == current_pdf_tckn_int:
-                        self.sheet.cell(row=current_row[0].row, column=14).value = pdf_extractor.alacak
-                        self.sheet.cell(row=current_row[0].row, column=13).value = pdf_extractor.feragat
-                        self.sheet.cell(row=current_row[0].row, column=17).value = pdf_extractor.url
-                        self.tckn_rows.append(current_pdf_tckn_int)
-                        self.filled_row += 1
-                        print(f"PDF TCKN found and updated in Excel: {current_pdf_tckn_int}")
-                        break
-                    else:
-                        destination_path = os.path.join(self.output_folder_path, "Undesired_Files")
-                        os.makedirs(destination_path, exist_ok=True)
-                        print(f"Moving file {pdf_file} to {destination_path}")
-                        if os.path.exists(pdf_file):
-                            try:
-                                shutil.move(pdf_file, os.path.normpath(os.path.join(destination_path, os.path.basename(pdf_file))))
-                                self.outlier_counter += 1
-                            except FileNotFoundError as e:
-                                print(f"Error moving file: {e}")
-                        else:
-                            print(f"File not found: {pdf_file}")
-        #print(unique_tckns)
+
+            if excel_tckn.count(current_pdf_tckn) == 1:
+
+                current_row = excel_tckn.index(current_pdf_tckn) + 2
+                self.sheet.cell(row=current_row, column=14).value = pdf_extractor.alacak
+                self.sheet.cell(row=current_row, column=13).value = pdf_extractor.feragat
+                self.sheet.cell(row=current_row, column=17).value = pdf_extractor.url
+                self.tckn_rows.append(int(current_pdf_tckn))
+                self.filled_row += 1
+                print(f"PDF TCKN found and updated in Excel: {current_pdf_tckn}")
+
+            else:
+                destination_path = os.path.join(self.output_folder_path, "Undesired_Files")
+                os.makedirs(destination_path, exist_ok=True)
+                print(f"Moving file {pdf_file} to {destination_path}")
+                if os.path.exists(pdf_file):
+                    try:
+                        shutil.move(pdf_file,
+                                    os.path.normpath(os.path.join(destination_path, os.path.basename(pdf_file))))
+                        self.outlier_counter += 1
+                    except FileNotFoundError as e:
+                        print(f"Error moving file: {e}")
+                else:
+                    print(f"File not found: {pdf_file}")
         workbook.save(self.output_xlsx_file)
 
 
