@@ -100,7 +100,7 @@ class ConverterFrame(ttk.Frame):
         output_xlsx_file = fd.askopenfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
         if output_xlsx_file:
             self.output_xlsx_file = output_xlsx_file
-            self.process_folder(self.output_xlsx_file)
+            #self.process_folder(self.output_xlsx_file)
             messagebox.showinfo('Başarılı', "Verilerin aktarılacağı Excel başarıyla seçildi")
             self.output_txt_button['state'] = 'disabled'
             self.input_button['state'] = 'normal'
@@ -114,11 +114,10 @@ class ConverterFrame(ttk.Frame):
             return
 
         pdf_extractor = PdfExtractor(folder_path)
-
         workbook = load_workbook(filename=self.output_xlsx_file)
         self.sheet = workbook.active
 
-        self.outlier_counter = 0
+        #self.outlier_counter = 0
         self.filled_row = 0
         self.tckn_rows = []
         read_tckns = []
@@ -126,8 +125,10 @@ class ConverterFrame(ttk.Frame):
         filled = []
 
         excel_tckn = []
+        excel_icra = []
         for a in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row):
             excel_tckn.append(unidecode(str(a[2].value)))
+            excel_icra.append(unidecode(str(a[8].value).lower() +"_"+ str(a[9].value).lower()))
 
         # Initialize tckn_column_index outside the loop
         tckn_column_index = 2  # Adjust this index based on the actual column index for TCKN
@@ -168,31 +169,18 @@ class ConverterFrame(ttk.Frame):
 
                 continue
 
-            # Rest of the loop remains unchanged
+            try:
+                icra_row = excel_icra.index(unidecode(pdf_extractor.icra_dosyasi.lower() +"_"+ pdf_extractor.icra_dairesi.lower())) + 2
+                found_match = True
+                self.sheet.cell(row=icra_row, column=14).value = pdf_extractor.alacak
+                self.sheet.cell(row=icra_row, column=13).value = pdf_extractor.feragat
+                self.sheet.cell(row=icra_row, column=17).value = pdf_extractor.url
+                self.filled_row += 1
+                print(f"icra no ve daire eşit excel'e doldurdum icra dosyası: {excel_icra[icra_row - 2]}")
 
-            # Check if icra_dosyasi and icra_dairesi match with the values in the 9th and 10th columns
-            for current_row in self.sheet.iter_rows(min_row=1, max_row=self.sheet.max_row):
-                if current_row[9].value and current_row[10].value:
-                    excel_icra_dosyasi = unidecode(str(current_row[8].value))
-                    excel_icra_dairesi = unidecode(str(current_row[9].value))
 
-                    if unidecode(pdf_extractor.icra_dosyasi.lower()) == excel_icra_dosyasi.lower() and unidecode(pdf_extractor.icra_dairesi.lower()) == excel_icra_dairesi.lower():
-                        try:
-                            excel_tckn_value_cell = current_row[tckn_column_index]
-                            if excel_tckn_value_cell is not None and excel_tckn_value_cell.value is not None:
-                                self.tckn_cell = current_row[0]
-                                self.sheet.cell(row=current_row[0].row, column=14).value = pdf_extractor.alacak
-                                self.sheet.cell(row=current_row[0].row, column=13).value = pdf_extractor.feragat
-                                self.sheet.cell(row=current_row[0].row, column=17).value = pdf_extractor.url
-                                self.tckn_rows.append(pdf_extractor.tckn)
-                                filled.append(self.tckn_cell.row)
-                                print(f"icra no ve daire eşit excel'e doldurdum icra dosyası: {excel_icra_dosyasi} and icra dairesi: {excel_icra_dairesi} ", excel_tckn_value_cell)
-                                self.filled_row += 1
-                                found_match = True
-                                break  # Exit the loop when a match is found
-                        except IndexError:
-                            print(f"IndexError: TCKN column might be missing.", excel_tckn_value_cell.value)
-                            continue
+            except ValueError as ve:
+                pass
 
             # Step 2: Check if the TCKN is unique in the Excel file
             #unique_tckns = set([str(row[2].value) for row in self.sheet.iter_rows(min_row=2, max_row=self.sheet.max_row)])
@@ -209,6 +197,8 @@ class ConverterFrame(ttk.Frame):
                 self.sheet.cell(row=current_row, column=14).value = pdf_extractor.alacak
                 self.sheet.cell(row=current_row, column=13).value = pdf_extractor.feragat
                 self.sheet.cell(row=current_row, column=17).value = pdf_extractor.url
+                self.sheet.cell(row=current_row, column=11).value = pdf_extractor.icra_dosyasi
+                self.sheet.cell(row=current_row, column=12).value = pdf_extractor.icra_dairesi
                 self.tckn_rows.append(int(current_pdf_tckn))
                 self.filled_row += 1
                 print(f"PDF TCKN found and updated in Excel: {current_pdf_tckn}")
@@ -226,8 +216,8 @@ class ConverterFrame(ttk.Frame):
                         print(f"Error moving file: {e}")
                 else:
                     print(f"File not found: {pdf_file}")
-        workbook.save(self.output_xlsx_file)
 
+        workbook.save(self.output_xlsx_file)
 
 root = tk.Tk()
 root.geometry('200x200')
