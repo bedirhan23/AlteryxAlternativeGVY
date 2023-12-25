@@ -117,7 +117,7 @@ class ConverterFrame(ttk.Frame):
         workbook = load_workbook(filename=self.output_xlsx_file)
         self.sheet = workbook.active
 
-        #self.outlier_counter = 0
+        self.outlier_counter = 0
         self.filled_row = 0
         self.tckn_rows = []
         read_tckns = []
@@ -172,11 +172,15 @@ class ConverterFrame(ttk.Frame):
             try:
                 icra_row = excel_icra.index(unidecode(pdf_extractor.icra_dosyasi.lower() +"_"+ pdf_extractor.icra_dairesi.lower())) + 2
                 found_match = True
-                self.sheet.cell(row=icra_row, column=14).value = pdf_extractor.alacak
-                self.sheet.cell(row=icra_row, column=13).value = pdf_extractor.feragat
-                self.sheet.cell(row=icra_row, column=17).value = pdf_extractor.url
-                self.filled_row += 1
-                print(f"icra no ve daire eşit excel'e doldurdum icra dosyası: {excel_icra[icra_row - 2]}")
+
+                if self.sheet.cell(row=icra_row, column=13).value is not None and self.sheet.cell(row= icra_row, column=14).value is not None:
+                    print(f"Warning: Row {icra_row}, columns 13 and 14 are already filled. Skipping...")
+                else:
+                    self.sheet.cell(row=icra_row, column=14).value = pdf_extractor.alacak
+                    self.sheet.cell(row=icra_row, column=13).value = pdf_extractor.feragat
+                    self.sheet.cell(row=icra_row, column=17).value = pdf_extractor.url
+                    self.filled_row += 1
+                    print(f"icra no ve daire eşit excel'e doldurdum icra dosyası: {excel_icra[icra_row - 2]}")
 
 
             except ValueError as ve:
