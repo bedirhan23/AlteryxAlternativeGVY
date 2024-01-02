@@ -10,7 +10,10 @@ from openpyxl import load_workbook
 from tkinter import messagebox
 import locale
 from unidecode import unidecode
+import tkinter.font
+from tkinter import font
 
+#tk.Tk.option_add("*Font", "Arial 12")
 locale.setlocale(locale.LC_ALL, 'tr_TR.UTF-8')
 
 
@@ -60,22 +63,43 @@ class ConverterFrame(ttk.Frame):
 
         options = {'padx': 5, 'pady': 5}
 
+        self.desired_font = tkinter.font.Font(family="Arial", size=16)
+
         self.output_folder_path = None
         self.output_xlsx_file = None
+        self.empty_excel_file = None
 
-        self.input_button = ttk.Button(self, text='Input Folder', command=self.call_folder, state='disabled')
-        self.input_button.grid(column=0, row=2, **options)
+        self.set_button_style()
 
-        self.output_button = ttk.Button(self, text='Output Folder', command=self.call_output_folder, state='normal')
-        self.output_button.grid(column=0, row=0, **options)
+        self.input_button = ttk.Button(self, text="PDF'lerin Klasörü", command=self.call_folder, state='disabled')
+        self.input_button.grid(column=0, row=3, padx=50, pady=20)
+        self.input_button.configure(style="Bold.TButton")  # Correct font configuration
 
-        self.output_txt_button = ttk.Button(self, text='Output Excel', command=self.call_output_xlsx, state='disabled')
-        self.output_txt_button.grid(column=0, row=1, **options)
+        # Correctly configure other buttons
+        self.output_button = ttk.Button(self, text='İstenmeyen Klasörü', command=self.call_output_folder, state='normal')
+        self.output_button.grid(column=0, row=0, padx=50, pady=20)
+        self.output_button.configure(style="Bold.TButton")
+
+        self.output_txt_button = ttk.Button(self, text='Doldurulacak  Excel', command=self.call_output_xlsx, state='disabled')
+        self.output_txt_button.grid(column=0, row=1, padx=50, pady=20)
+        self.output_txt_button.configure(style="Bold.TButton")
+
+        self.empty_excel_button = ttk.Button(self, text='Boş Excel', command=self.empty_excel, state='disabled')
+        self.empty_excel_button.grid(column=0, row=2, padx=50, pady=20)
+        self.empty_excel_button.configure(style="Bold.TButton")
 
         self.summary_button = ttk.Button(self, text='Ozet', command=self.show_summary, state='normal')
-        self.summary_button.grid(column=0, row=4, **options)
+        self.summary_button.grid(column=0, row=4, padx=50, pady=20)
+        self.summary_button.configure(style="Bold.TButton")
+
         self.information_label = ttk.Label(self, text='Butonlar sırasıyla çalışmaktadır.')
-        self.information_label.grid(column=0, row=5, **options)
+        self.information_label.grid(column=0, row=5, padx=50, pady=20)
+        self.information_label.configure(font= self.desired_font)
+
+
+    def set_button_style(self):
+        style = ttk.Style()
+        style.configure("Bold.TButton", font= self.desired_font)
 
     def show_summary(self):
         summary_text = f'{self.outlier_counter} dosya formata uymadığı {self.output_folder_path} klasörüne aktarıldı.\n {self.filled_row} dosya {self.output_xlsx_file} dosyasına işlendi'
@@ -100,10 +124,17 @@ class ConverterFrame(ttk.Frame):
         output_xlsx_file = fd.askopenfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
         if output_xlsx_file:
             self.output_xlsx_file = output_xlsx_file
-            #self.process_folder(self.output_xlsx_file)
+            self.empty_excel_button['state'] = 'normal'  # Enable empty_excel_button when output_xlsx_file is selected
             messagebox.showinfo('Başarılı', "Verilerin aktarılacağı Excel başarıyla seçildi")
             self.output_txt_button['state'] = 'disabled'
             self.input_button['state'] = 'normal'
+
+    def empty_excel(self):
+        print("Empty Excel dosyası seçiliyor...")
+        self.empty_excel_file = fd.askopenfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+        if self.empty_excel_file:
+            messagebox.showinfo('Başarılı', message="Boş excel dosyası başarıyla seçildi")
+            self.empty_excel_button['state'] = 'disabled'
 
     def process_folder(self, folder_path):
         if self.output_xlsx_file is None:
@@ -113,9 +144,16 @@ class ConverterFrame(ttk.Frame):
             print("Lütfen önce Output Folder'ı seçin.")
             return
 
+        if self.empty_excel_file is None:
+            print("Lütfen önce Boş Excel dosyası seçin.")
+            return
+
         pdf_extractor = PdfExtractor(folder_path)
         workbook = load_workbook(filename=self.output_xlsx_file)
         self.sheet = workbook.active
+
+        workbook2 = load_workbook(filename=self.empty_excel_file)
+        self.empty_sheet = workbook2.active
 
         self.outlier_counter = 0
         self.filled_row = 0
@@ -123,6 +161,7 @@ class ConverterFrame(ttk.Frame):
         read_tckns = []
         self.tckn_row_mapping = []
         filled = []
+        self.empty_row = 2
 
         excel_tckn = []
         excel_icra = []
@@ -139,17 +178,26 @@ class ConverterFrame(ttk.Frame):
             pdf_extractor.get_extracted_text()
 
             print(f"File: {pdf_file}")
+            self.empty_sheet.cell(row= self.empty_row, column=1).value = pdf_file
             print("İcra Dairesi:", pdf_extractor.icra_dairesi)
+            self.empty_sheet.cell(row=self.empty_row, column=2).value = pdf_extractor.icra_dairesi
             print("İcra Dosyası:", pdf_extractor.icra_dosyasi)
+            self.empty_sheet.cell(row=self.empty_row, column=3).value = pdf_extractor.icra_dosyasi
             print("Borçlu:", pdf_extractor.borclu)
+            self.empty_sheet.cell(row=self.empty_row, column=4).value = pdf_extractor.borclu
             print("TCKN:", pdf_extractor.tckn)
+            self.empty_sheet.cell(row=self.empty_row, column=5).value = pdf_extractor.tckn
             print(type(pdf_extractor.tckn))
             print("Asıl Alacak:", pdf_extractor.alacak)
+            self.empty_sheet.cell(row=self.empty_row, column=6).value = pdf_extractor.alacak
             print("Feragat Edilen Tutar:", pdf_extractor.feragat)
+            self.empty_sheet.cell(row=self.empty_row, column=8).value = pdf_extractor.feragat
             print("URL:", pdf_extractor.url)
+            self.empty_sheet.cell(row=self.empty_row, column=9).value = pdf_extractor.url
             print("********************************")
             print("\n")
 
+            self.empty_row += 1
             self.tckn_cell = None
             found_match = False
 
@@ -221,10 +269,12 @@ class ConverterFrame(ttk.Frame):
                 else:
                     print(f"File not found: {pdf_file}")
 
+        workbook2.save(self.empty_excel_file)
         workbook.save(self.output_xlsx_file)
 
 root = tk.Tk()
-root.geometry('200x200')
+#root.configure(font = self.desired_font)
+root.wm_minsize(width=400, height=300)
 app = ConverterFrame(root)
 app.grid(row=0, column=0, padx=10, pady=10)
 root.mainloop()
